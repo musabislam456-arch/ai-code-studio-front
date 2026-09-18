@@ -1,7 +1,7 @@
 import { getAccessToken } from "./api";
 
 export function connectTerminal({ onData, onExit }) {
-  const apiUrl = import.meta.env.VITE_API_URL;
+  const apiUrl = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
   const token = encodeURIComponent(getAccessToken());
   let wsUrl;
   if (apiUrl) {
