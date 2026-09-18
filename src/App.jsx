@@ -14,7 +14,7 @@ export default function App() {
   const [tree, setTree] = useState([]);
   const [activePath, setActivePath] = useState(null);
   const [content, setContent] = useState("");
-  const [modelId, setModelId] = useState("gemini-3.5-flash");
+  const [modelId, setModelId] = useState("gemini-3.8-flash");
   const [autoMode, setAutoMode] = useState(true);
   const [panelTab, setPanelTab] = useState("files"); // files | terminal | git
 
