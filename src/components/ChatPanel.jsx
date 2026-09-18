@@ -1,5 +1,5 @@
 import React, { useState } from "react";
-import { api } from "../lib/api";
+import { api, agentChatStream } from "../lib/api";
 
 const SYSTEM_INSTRUCTION = `You are AI Code Studio's assistant, an agentic coding helper.
 You can read/write files, run terminal commands, and manage git/GitHub for the
@@ -34,10 +34,43 @@ function renderContent(text) {
   );
 }
 
+// Short human-readable label for a live tool step, e.g. "Read file — src/App.jsx"
+function toolLabel(step) {
+  const { tool, args = {} } = step;
+  switch (tool) {
+    case "read_file": return { label: "Read file", detail: args.path };
+    case "write_file": return { label: "Wrote file", detail: args.path };
+    case "delete_file": return { label: "Deleted", detail: args.path };
+    case "list_files": return { label: "Listed files", detail: args.path || "/" };
+    case "run_command": return { label: "Ran a command", detail: args.command };
+    default: return { label: tool, detail: "" };
+  }
+}
+
+function StepsList({ steps }) {
+  if (!steps || steps.length === 0) return null;
+  return (
+    <div className="chat-steps">
+      {steps.map((s, i) => {
+        const { label, detail } = toolLabel(s);
+        const state = s.ok === null ? "pending" : s.ok ? "ok" : "fail";
+        return (
+          <div key={i} className={`chat-step ${state}`}>
+            <span className="chat-step-label">{label}</span>
+            {detail && <span className="chat-step-detail">{detail}</span>}
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 export default function ChatPanel({ modelId, autoMode, workspace }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
+  const [liveSteps, setLiveSteps] = useState([]);
+  const [liveStatus, setLiveStatus] = useState("");
 
   const send = async () => {
     if (!input.trim()) return;
@@ -45,8 +78,12 @@ export default function ChatPanel({ modelId, autoMode, workspace }) {
     setMessages(next);
     setInput("");
     setLoading(true);
+    setLiveSteps([]);
+    setLiveStatus("Soch raha hoon...");
+
+    let useModel = modelId;
+    const steps = [];
     try {
-      let useModel = modelId;
       if (autoMode) {
         const pick = await api.autoPickModel({
           needsDeepReasoning: input.length > 400,
@@ -55,18 +92,37 @@ export default function ChatPanel({ modelId, autoMode, workspace }) {
         });
         useModel = pick.model;
       }
-      const res = await api.chat({
-        workspace,
-        modelId: useModel,
-        messages: next,
-        systemInstruction: SYSTEM_INSTRUCTION
-      });
-      const text = res?.data?.candidates?.[0]?.content?.parts?.map((p) => p.text).join("") || "(no response)";
-      setMessages((m) => [...m, { role: "assistant", content: text, model: res.usedModel }]);
+
+      await agentChatStream(
+        {
+          workspace,
+          modelId: useModel,
+          messages: next,
+          systemInstruction: SYSTEM_INSTRUCTION
+        },
+        (event) => {
+          if (event.type === "status") {
+            setLiveStatus(event.text);
+          } else if (event.type === "tool_call") {
+            steps.push({ tool: event.tool, args: event.args, ok: null, result: null });
+            setLiveSteps([...steps]);
+          } else if (event.type === "tool_result") {
+            const pending = [...steps].reverse().find((s) => s.tool === event.tool && s.ok === null);
+            if (pending) { pending.ok = event.ok; pending.result = event.result; }
+            setLiveSteps([...steps]);
+          } else if (event.type === "final") {
+            setMessages((m) => [...m, { role: "assistant", content: event.text, model: event.usedModel, steps }]);
+          } else if (event.type === "error") {
+            setMessages((m) => [...m, { role: "assistant", content: event.message, isError: true, steps }]);
+          }
+        }
+      );
     } catch (err) {
-      setMessages((m) => [...m, { role: "assistant", content: err.message, isError: true }]);
+      setMessages((m) => [...m, { role: "assistant", content: err.message, isError: true, steps }]);
     } finally {
       setLoading(false);
+      setLiveSteps([]);
+      setLiveStatus("");
     }
   };
 
@@ -82,12 +138,17 @@ export default function ChatPanel({ modelId, autoMode, workspace }) {
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg ${m.role}${m.isError ? " error" : ""}`}>
             {m.model && <div className="chat-msg-model">{m.model}</div>}
+            <StepsList steps={m.steps} />
             {m.isError ? <p className="msg-text">⚠ {m.content}</p> : renderContent(m.content)}
           </div>
         ))}
         {loading && (
           <div className="chat-msg assistant loading">
-            <span className="dot" /><span className="dot" /><span className="dot" />
+            <StepsList steps={liveSteps} />
+            <div className="chat-live-status">
+              <span className="dot" /><span className="dot" /><span className="dot" />
+              <span className="chat-live-text">{liveStatus}</span>
+            </div>
           </div>
         )}
       </div>

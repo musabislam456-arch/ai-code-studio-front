@@ -28,6 +28,43 @@ async function req(method, url, body) {
   return res.json();
 }
 
+// Agentic chat — streams live steps (status/tool_call/tool_result/final)
+// over SSE as the model works, instead of waiting for one final response.
+// `onEvent` is called for every parsed event as it arrives.
+export async function agentChatStream(payload, onEvent) {
+  const token = getAccessToken();
+  const headers = { "Content-Type": "application/json" };
+  if (token) headers.Authorization = `Bearer ${token}`;
+
+  const res = await fetch(BASE + "/agent/chat", {
+    method: "POST",
+    headers,
+    body: JSON.stringify(payload)
+  });
+  if (!res.ok || !res.body) {
+    throw new Error((await res.json().catch(() => ({}))).error || res.statusText);
+  }
+
+  const reader = res.body.getReader();
+  const decoder = new TextDecoder();
+  let buffer = "";
+
+  while (true) {
+    const { value, done } = await reader.read();
+    if (done) break;
+    buffer += decoder.decode(value, { stream: true });
+
+    let sepIndex;
+    while ((sepIndex = buffer.indexOf("\n\n")) !== -1) {
+      const rawEvent = buffer.slice(0, sepIndex);
+      buffer = buffer.slice(sepIndex + 2);
+      const line = rawEvent.split("\n").find((l) => l.startsWith("data: "));
+      if (!line) continue; // e.g. ": ping" heartbeat comments
+      onEvent(JSON.parse(line.slice(6)));
+    }
+  }
+}
+
 export const api = {
   getModels: () => req("GET", "/models"),
   autoPickModel: (hint) => req("POST", "/models/auto-pick", hint),

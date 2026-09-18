@@ -61,11 +61,23 @@ body, html, #root {
 .code-block code { font-family: "SF Mono", Menlo, monospace; font-size: 13px; white-space: pre; }
 .code-lang { font-size: 11px; color: var(--text-dim); text-transform: uppercase; letter-spacing: 0.05em; margin-bottom: 6px; }
 
-.chat-msg.loading { display: flex; gap: 4px; align-items: center; padding: 14px; }
+.chat-msg.loading { display: flex; flex-direction: column; gap: 8px; padding: 14px; }
+.chat-live-status { display: flex; gap: 6px; align-items: center; }
+.chat-live-text { font-size: 12px; color: var(--text-dim); margin-left: 4px; }
 .chat-msg.loading .dot { width: 6px; height: 6px; border-radius: 50%; background: var(--text-dim); animation: bounce 1.2s infinite ease-in-out; }
 .chat-msg.loading .dot:nth-child(2) { animation-delay: 0.15s; }
 .chat-msg.loading .dot:nth-child(3) { animation-delay: 0.3s; }
 @keyframes bounce { 0%, 80%, 100% { opacity: 0.3; transform: translateY(0); } 40% { opacity: 1; transform: translateY(-3px); } }
+
+/* Live agent tool steps — "Read file / Ran a command / Wrote file" trail
+   shown above the final answer, similar to Claude Code's step list. */
+.chat-steps { display: flex; flex-direction: column; gap: 3px; margin-bottom: 8px; font-size: 12px; }
+.chat-step { display: flex; gap: 6px; align-items: baseline; padding: 3px 8px; border-radius: 6px; background: var(--bg-panel); color: var(--text-dim); }
+.chat-step.ok { color: var(--text); }
+.chat-step.fail { color: var(--error); background: var(--error-dim); }
+.chat-step.pending { opacity: 0.6; }
+.chat-step-label { font-weight: 600; white-space: nowrap; }
+.chat-step-detail { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; font-family: "SF Mono", Menlo, monospace; opacity: 0.85; }
 
 .chat-input-row { display: flex; gap: 8px; padding: 14px 20px 20px; border-top: 1px solid var(--border); background: var(--bg); }
 .chat-input-row textarea {
@@ -127,15 +139,15 @@ body, html, #root {
 .git-row input { flex: 1; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); padding: 8px 10px; border-radius: var(--radius-sm); font-size: 13px; }
 .git-row button { background: var(--bg-panel); border: 1px solid var(--border); color: var(--text); padding: 8px 14px; border-radius: var(--radius-sm); cursor: pointer; font-size: 13px; }
 .git-row button:hover { border-color: var(--accent); }
+.git-row row button:hover { border-color: var(--accent); }
 .download-link { color: var(--accent); font-size: 13px; text-decoration: none; }
+.download-link:hover { text-decoration: underline; }
 .download-link:hover { text-decoration: underline; }
 .git-log { font-size: 12px; color: var(--text-dim); word-break: break-all; }
 
-/* ---------- Login gate ---------- */
-.login-gate { height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
-.login-card { background: var(--bg-panel); padding: 36px; border-radius: 16px; width: 320px; text-align: center; border: 1px solid var(--border); }
+/* ausal-gate { height: 100vh; display: flex; align-items: center; justify-content: center; background: var(--bg); }
+.login-card { background: var(--bg-panel); padding: 30px; border-radius: 16px; width: 320px; text-align: center; border: 1px solid var(--border); }
 .login-card h2 { margin-top: 0; }
 .login-card p { font-size: 13px; color: var(--text-dim); }
 .login-card input { width: 100%; padding: 10px; margin: 14px 0; background: var(--bg-input); border: 1px solid var(--border); color: var(--text); border-radius: var(--radius-sm); }
-.login-card button { width: 100%; padding: 10px; background: var(--accent); color: #1c1006; border: none; border-radius: var(--radius-sm); cursor: pointer; font-weight: 600; }
-.login-card button:hover { background: var(--accent-hover); }
+.login-card button { width: 100%; padding: 10px; background: var(--accent); color: #1c1006; border: none; padding: 10px; background: var(--accent); color: #1c1006; border: none; border-radius: var(--radius-sm); css}
