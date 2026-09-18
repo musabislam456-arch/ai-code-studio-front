@@ -11,7 +11,7 @@ export default function ModelPicker({ selectedModel, onChange, autoMode, onToggl
   return (
     <div className="model-picker">
       <label className="auto-toggle">
-        <input type="checkbox" checked={autoMode} onChange={(e) => onChange(e.target.value)} />
+        <input type="checkbox" checked={autoMode} onChange={(e) => onToggleAuto(e.target.checked)} />
         Auto
       </label>
       <select
