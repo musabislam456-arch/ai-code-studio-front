@@ -16,7 +16,7 @@ export default function App() {
   const [content, setContent] = useState("");
   const [modelId, setModelId] = useState("gemini-3.5-flash");
   const [autoMode, setAutoMode] = useState(true);
-  const [rightTab, setRightTab] = useState("chat");
+  const [panelTab, setPanelTab] = useState("files"); // files | terminal | git
 
   const refreshTree = () => api.tree(WORKSPACE).then((r) => setTree(r.tree)).catch(() => {});
 
@@ -24,6 +24,7 @@ export default function App() {
 
   const openFile = async (path) => {
     setActivePath(path);
+    setPanelTab("files");
     const r = await api.readFile(WORKSPACE, path);
     setContent(r.content);
   };
@@ -49,42 +50,59 @@ export default function App() {
   return (
     <div className="app">
       <header className="topbar">
-        <div className="brand">🛠️ AI Code Studio</div>
+        <div className="brand">
+          <span className="brand-dot" />
+          AI Code Studio
+        </div>
         <ModelPicker
           selectedModel={modelId}
           onChange={setModelId}
           autoMode={autoMode}
           onToggleAuto={setAutoMode}
         />
-        <div className="tabs">
-          <button className={rightTab === "chat" ? "active" : ""} onClick={() => setRightTab("chat")}>Chat</button>
-          <button className={rightTab === "git" ? "active" : ""} onClick={() => setRightTab("git")}>Git</button>
-        </div>
       </header>
 
-      <div className="main-grid">
-        <Sidebar
-          tree={tree}
-          onOpenFile={openFile}
-          onRefresh={refreshTree}
-          onUploadZip={uploadZip}
-          onDownloadZip={() => window.open(api.downloadZipUrl(WORKSPACE), "_blank")}
-        />
-
-        <div className="center-col">
-          <CodeEditor
-            activePath={activePath}
-            content={content}
-            onChange={setContent}
-            onSave={saveFile}
-          />
-          <TerminalPanel cwd={WORKSPACE} />
+      <div className="workspace">
+        {/* Chat is the primary surface — this is the main thing you look at,
+            like talking to Claude. Everything else lives in the side panel. */}
+        <div className="chat-col">
+          <ChatPanel modelId={modelId} autoMode={autoMode} workspace={WORKSPACE} />
         </div>
 
-        <div className="right-col">
-          {rightTab === "chat"
-            ? <ChatPanel modelId={modelId} autoMode={autoMode} workspace={WORKSPACE} />
-            : <GitPanel workspace={WORKSPACE} />}
+        <div className="panel-col">
+          <div className="panel-tabs">
+            <button className={panelTab === "files" ? "active" : ""} onClick={() => setPanelTab("files")}>
+              Files{activePath ? <span className="tab-hint">· {activePath.split("/").pop()}</span> : null}
+            </button>
+            <button className={panelTab === "terminal" ? "active" : ""} onClick={() => setPanelTab("terminal")}>
+              Terminal
+            </button>
+            <button className={panelTab === "git" ? "active" : ""} onClick={() => setPanelTab("git")}>
+              Git
+            </button>
+          </div>
+
+          <div className="panel-body">
+            {panelTab === "files" && (
+              <div className="files-view">
+                <Sidebar
+                  tree={tree}
+                  onOpenFile={openFile}
+                  onRefresh={refreshTree}
+                  onUploadZip={uploadZip}
+                  onDownloadZip={() => window.open(api.downloadZipUrl(WORKSPACE), "_blank")}
+                />
+                <CodeEditor
+                  activePath={activePath}
+                  content={content}
+                  onChange={setContent}
+                  onSave={saveFile}
+                />
+              </div>
+            )}
+            {panelTab === "terminal" && <TerminalPanel cwd={WORKSPACE} />}
+            {panelTab === "git" && <GitPanel workspace={WORKSPACE} />}
+          </div>
         </div>
       </div>
     </div>
