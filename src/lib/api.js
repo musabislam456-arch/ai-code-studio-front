@@ -1,7 +1,9 @@
 // In local dev, leave VITE_API_URL unset — Vite's proxy forwards /api to
 // the backend. In production (Vercel), set VITE_API_URL to your deployed
 // Railway backend URL, e.g. https://your-app.up.railway.app
-const ROOT = import.meta.env.VITE_API_URL || "";
+// (trailing slash is stripped automatically so a value like
+// "https://your-app.up.railway.app/" doesn't produce a broken "//api" URL)
+const ROOT = (import.meta.env.VITE_API_URL || "").replace(/\/+$/, "");
 const BASE = ROOT + "/api";
 
 export function getAccessToken() {
