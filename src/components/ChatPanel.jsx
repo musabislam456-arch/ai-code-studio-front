@@ -37,12 +37,13 @@ function renderContent(text) {
 // Short human-readable label for a live tool step, e.g. "Read file — src/App.jsx"
 function toolLabel(step) {
   const { tool, args = {} } = step;
+  const pending = step.ok === null;
   switch (tool) {
-    case "read_file": return { label: "Read file", detail: args.path };
-    case "write_file": return { label: "Wrote file", detail: args.path };
-    case "delete_file": return { label: "Deleted", detail: args.path };
+    case "read_file": return { label: pending ? "Reading file" : "Read file", detail: args.path };
+    case "write_file": return { label: pending ? "Writing file" : "Wrote file", detail: args.path };
+    case "delete_file": return { label: pending ? "Deleting" : "Deleted", detail: args.path };
     case "list_files": return { label: "Listed files", detail: args.path || "/" };
-    case "run_command": return { label: "Ran a command", detail: args.command };
+    case "run_command": return { label: pending ? "Running command" : "Ran command", detail: args.command };
     default: return { label: tool, detail: "" };
   }
 }
