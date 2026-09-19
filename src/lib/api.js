@@ -60,7 +60,9 @@ export async function agentChatStream(payload, onEvent) {
       buffer = buffer.slice(sepIndex + 2);
       const line = rawEvent.split("\n").find((l) => l.startsWith("data: "));
       if (!line) continue; // e.g. ": ping" heartbeat comments
-      onEvent(JSON.parse(line.slice(6)));
+      const event=JSON.parse(line.slice(6));
+      onEvent(event);
+      if(event.type==="error") throw new Error(event.message||event.error||"Agent error");
     }
   }
 }
