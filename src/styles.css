@@ -37,11 +37,11 @@ body, html, #root {
 .brand-dot { width: 9px; height: 9px; border-radius: 50%; background: var(--accent); display: inline-block; }
 .topbar .model-picker { margin-left: auto; }
 
-.workspace { flex: 1; display: grid; grid-template-columns: 1.1fr 0.9fr; overflow: hidden; }
+.workspace { flex: 1; display: grid; grid-template-columns: 1.1fr 0.9fr; overflow: hidden; min-height: 0; }
 
 /* ---------- Chat: primary surface ---------- */
-.chat-col { min-width: 0; border-right: 1px solid var(--border); }
-.chat-panel { display: flex; flex-direction: column; height: 100%; }
+.chat-col { min-width: 0; min-height: 0; border-right: 1px solid var(--border); display: flex; flex-direction: column; }
+.chat-panel { display: flex; flex-direction: column; height: 100%; min-height: 0; }
 .chat-messages { flex: 1; overflow-y: auto; padding: 24px; display: flex; flex-direction: column; gap: 14px; }
 
 .chat-empty { flex: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; text-align: center; gap: 6px; color: var(--text-dim); }
@@ -94,7 +94,7 @@ body, html, #root {
 .chat-input-row button:disabled { opacity: 0.5; cursor: default; }
 
 /* ---------- Side panel: files / terminal / git ---------- */
-.panel-col { display: flex; flex-direction: column; min-width: 0; background: var(--bg-panel); }
+.panel-col { display: flex; flex-direction: column; min-width: 0; min-height: 0; background: var(--bg-panel); }
 .panel-tabs { display: flex; gap: 4px; padding: 10px 12px 0; }
 .panel-tabs button {
   background: transparent; border: none; color: var(--text-dim); padding: 8px 14px;
@@ -179,3 +179,39 @@ body, html, #root {
 .agent-preview pre{flex:1;min-height:0;overflow:auto;margin:0;padding:14px;font-family:"SF Mono",Menlo,monospace;font-size:12px;line-height:1.55;white-space:pre}
 .chat-step{border:none;width:100%;text-align:left;cursor:pointer}
 .chat-step:hover{background:var(--accent-dim)}
+
+/* ---------- Mobile / narrow screens ----------
+   There was previously NO responsive breakpoint at all: .workspace was a
+   fixed 2-column grid with overflow:hidden, which on a phone-width viewport
+   trapped the whole app with no way to scroll to anything. Below a
+   breakpoint we stack chat above the panel (like Claude's own mobile
+   layout) instead of squeezing two columns side by side, and let the
+   .workspace itself scroll vertically so nothing gets clipped. */
+@media (max-width: 860px) {
+  .topbar { flex-wrap: wrap; row-gap: 8px; }
+  .topbar .model-picker { margin-left: 0; }
+  .project-bar select { max-width: 140px; }
+
+  .workspace {
+    display: flex;
+    flex-direction: column;
+    overflow-y: auto;
+    -webkit-overflow-scrolling: touch;
+  }
+  .chat-col {
+    border-right: none;
+    border-bottom: 1px solid var(--border);
+    flex: none;
+    height: 60vh;
+    min-height: 320px;
+  }
+  .panel-col {
+    flex: none;
+    height: 70vh;
+    min-height: 360px;
+  }
+  .agent-view { grid-template-columns: 1fr; grid-auto-rows: minmax(0, 1fr); height: auto; }
+  .agent-list { border-right: none; border-bottom: 1px solid var(--border); max-height: 220px; }
+  .files-view { flex-direction: column; }
+  .sidebar { width: 100%; max-height: 160px; }
+}
