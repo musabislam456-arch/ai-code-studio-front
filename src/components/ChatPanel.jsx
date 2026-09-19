@@ -66,7 +66,7 @@ function StepsList({ steps, onSelect }) {
   );
 }
 
-export default function ChatPanel({ modelId, autoMode, workspace, onAgentEvent, onSelectStep }) {
+export default function ChatPanel({ modelId, autoMode, workspace, onAgentEvent, onSelectStep, onWorkspaceChange }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -111,12 +111,14 @@ export default function ChatPanel({ modelId, autoMode, workspace, onAgentEvent, 
           } else if (event.type === "tool_result") {
             const pending = [...steps].reverse().find((s) => s.tool === event.tool && s.ok === null);
             if (pending) { pending.ok = event.ok; pending.result = event.result; }
+            if (event.tool === "write_file" || event.tool === "delete_file") onWorkspaceChange?.();
             setLiveSteps([...steps]);
           } else if (event.type === "command_output") {
             const pending = [...steps].reverse().find((s) => s.tool === "run_command" && s.ok === null);
             if (pending) pending.output = [...(pending.output || []), { stream:event.stream, data:event.data || "" }];
             setLiveSteps([...steps]);
           } else if (event.type === "final") {
+            onWorkspaceChange?.();
             setMessages((m) => [...m, { role: "assistant", content: event.text, model: event.usedModel, steps }]);
           } else if (event.type === "error") {
             setMessages((m) => [...m, { role: "assistant", content: event.message, isError: true, steps }]);
