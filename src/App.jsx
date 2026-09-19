@@ -63,7 +63,7 @@ export default function App(){
   <div className="workspace">
    <div className="chat-col">
     <ChatPanel key={projectId} modelId={modelId} autoMode={autoMode} workspace={workspace}
-      onAgentEvent={e=>setEvents(x=>[...x,e])} onSelectStep={selectStep}/>
+      onAgentEvent={e=>setEvents(x=>[...x,e])} onSelectStep={selectStep} onWorkspaceChange={refreshTree}/>
    </div>
    <div className="panel-col">
     <div className="panel-tabs">
