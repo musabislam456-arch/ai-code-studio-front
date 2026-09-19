@@ -1,8 +1,8 @@
 import React, { useEffect, useState } from "react";
 import { api } from "../lib/api";
 
-export default function GitPanel({ workspace }) {
-  const [repoName, setRepoName] = useState(workspace);
+export default function GitPanel({ workspace, projectName }) {
+  const [repoName, setRepoName] = useState(projectName || workspace);
   const [commitMsg, setCommitMsg] = useState("Update from AI Code Studio");
   const [isPrivate, setIsPrivate] = useState(true);
   const [connection, setConnection] = useState(null);
@@ -13,7 +13,7 @@ export default function GitPanel({ workspace }) {
     catch (err) { setConnection({ connected: false, error: err.message }); }
   };
 
-  useEffect(() => { setRepoName(workspace); load(); }, [workspace]);
+  useEffect(() => { setRepoName(projectName || workspace); load(); }, [workspace, projectName]);
 
   const run = async (fn, label) => {
     try {
@@ -22,18 +22,13 @@ export default function GitPanel({ workspace }) {
       setLog(`✅ ${label}: ${JSON.stringify(result).slice(0, 500)}`);
       await load();
       return result;
-    } catch (err) {
-      setLog(`❌ ${label} failed: ${err.message}`);
-    }
+    } catch (err) { setLog(`❌ ${label} failed: ${err.message}`); }
   };
 
   const createRepo = async () => {
     const name = repoName.trim();
     if (!name) return setLog("❌ Repository name required.");
-    await run(
-      () => api.createGithubRepo(workspace, { repoName: name, isPrivate, description: `AI Code Studio project: ${workspace}` }),
-      `Create ${isPrivate ? "private" : "public"} GitHub repo and push project`
-    );
+    await run(() => api.createGithubRepo(workspace, { repoName: name, isPrivate, description: `AI Code Studio project: ${projectName || workspace}` }), `Create ${isPrivate ? "private" : "public"} GitHub repo and push project`);
   };
 
   const unlink = async () => {
@@ -51,9 +46,7 @@ export default function GitPanel({ workspace }) {
         </div>
       ) : (
         <>
-          <div className="git-row">
-            <input value={repoName} onChange={(e) => setRepoName(e.target.value)} placeholder="GitHub repo name" />
-          </div>
+          <div className="git-row"><input value={repoName} onChange={(e) => setRepoName(e.target.value)} placeholder="GitHub repo name" /></div>
           <div className="git-row">
             <label><input type="radio" checked={isPrivate} onChange={() => setIsPrivate(true)} /> Private</label>
             <label><input type="radio" checked={!isPrivate} onChange={() => setIsPrivate(false)} /> Public</label>
@@ -62,18 +55,15 @@ export default function GitPanel({ workspace }) {
           <small>Creates the repository, connects it to this project, commits the current workspace, and pushes to <code>main</code>.</small>
         </>
       )}
-
       <div className="git-row">
         <button onClick={() => run(() => api.gitInit(workspace), "git init")}>Init</button>
         <button onClick={() => run(() => api.gitPull(workspace, "origin", "main"), "git pull")}>Pull</button>
         <button onClick={() => run(() => api.gitPush(workspace, "origin", "main"), "git push")}>Push</button>
       </div>
-
       <div className="git-row">
         <input value={commitMsg} onChange={(e) => setCommitMsg(e.target.value)} placeholder="Commit message" />
         <button onClick={() => run(() => api.gitCommit(workspace, commitMsg), "git commit")}>Commit</button>
       </div>
-
       <a href={api.downloadZipUrl(workspace)} className="download-link">⬇️ Download workspace as .zip</a>
       <div className="git-log">{log}</div>
     </div>
