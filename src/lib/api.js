@@ -68,6 +68,18 @@ export async function agentChatStream(payload, onEvent) {
 export const api = {
   getModels: () => req("GET", "/models"),
   autoPickModel: (hint) => req("POST", "/models/auto-pick", hint),
+
+  signUp: (payload) => req("POST", "/auth/signup", payload),
+  signIn: (payload) => req("POST", "/auth/signin", payload),
+  me: () => req("GET", "/auth/me"),
+  signOut: () => req("POST", "/auth/signout"),
+  googleAuthUrl: () => `${BASE}/auth/google`,
+  googleExchange: (code) => req("POST", "/auth/google/exchange", { code }),
+
+  projects: () => req("GET", "/projects"),
+  createProject: (name) => req("POST", "/projects", { name }),
+  renameProject: (id,name) => req("PATCH", `/projects/${id}`, { name }),
+  deleteProject: (id) => req("DELETE", `/projects/${id}`),
   chat: (payload) => req("POST", "/chat", payload),
 
   tree: (ws) => req("GET", `/workspace/${ws}/tree`),
