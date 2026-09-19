@@ -47,7 +47,7 @@ function toolLabel(step) {
   }
 }
 
-function StepsList({ steps }) {
+function StepsList({ steps, onSelect }) {
   if (!steps || steps.length === 0) return null;
   return (
     <div className="chat-steps">
@@ -55,17 +55,17 @@ function StepsList({ steps }) {
         const { label, detail } = toolLabel(s);
         const state = s.ok === null ? "pending" : s.ok ? "ok" : "fail";
         return (
-          <div key={i} className={`chat-step ${state}`}>
+          <button key={i} type="button" onClick={() => onSelect?.(s)} className={`chat-step ${state}`}>
             <span className="chat-step-label">{label}</span>
             {detail && <span className="chat-step-detail">{detail}</span>}
-          </div>
+          </button>
         );
       })}
     </div>
   );
 }
 
-export default function ChatPanel({ modelId, autoMode, workspace }) {
+export default function ChatPanel({ modelId, autoMode, workspace, onAgentEvent, onSelectStep }) {
   const [messages, setMessages] = useState([]);
   const [input, setInput] = useState("");
   const [loading, setLoading] = useState(false);
@@ -101,14 +101,19 @@ export default function ChatPanel({ modelId, autoMode, workspace }) {
           systemInstruction: SYSTEM_INSTRUCTION
         },
         (event) => {
+          onAgentEvent?.(event);
           if (event.type === "status") {
             setLiveStatus(event.text);
           } else if (event.type === "tool_call") {
-            steps.push({ tool: event.tool, args: event.args, ok: null, result: null });
+            steps.push({ tool: event.tool, args: event.args, ok: null, result: null, output: [] });
             setLiveSteps([...steps]);
           } else if (event.type === "tool_result") {
             const pending = [...steps].reverse().find((s) => s.tool === event.tool && s.ok === null);
             if (pending) { pending.ok = event.ok; pending.result = event.result; }
+            setLiveSteps([...steps]);
+          } else if (event.type === "command_output") {
+            const pending = [...steps].reverse().find((s) => s.tool === "run_command" && s.ok === null);
+            if (pending) pending.output = [...(pending.output || []), { stream:event.stream, data:event.data || "" }];
             setLiveSteps([...steps]);
           } else if (event.type === "final") {
             setMessages((m) => [...m, { role: "assistant", content: event.text, model: event.usedModel, steps }]);
@@ -138,13 +143,13 @@ export default function ChatPanel({ modelId, autoMode, workspace }) {
         {messages.map((m, i) => (
           <div key={i} className={`chat-msg ${m.role}${m.isError ? " error" : ""}`}>
             {m.model && <div className="chat-msg-model">{m.model}</div>}
-            <StepsList steps={m.steps} />
+            <StepsList steps={m.steps} onSelect={onSelectStep} />
             {m.isError ? <p className="msg-text">⚠ {m.content}</p> : renderContent(m.content)}
           </div>
         ))}
         {loading && (
           <div className="chat-msg assistant loading">
-            <StepsList steps={liveSteps} />
+            <StepsList steps={liveSteps} onSelect={onSelectStep} />
             <div className="chat-live-status">
               <span className="dot" /><span className="dot" /><span className="dot" />
               <span className="chat-live-text">{liveStatus}</span>
